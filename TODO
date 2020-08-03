@@ -1,0 +1,17 @@
+SVG-import
+There is a problem with importing svg-files created from dvisvgm. 
+They are not automatically arranged in a suitable order. 
+
+There are some possible workarounds:
+	- Create your own importer of svg-files. This would be the 
+	  safest way, but it also requires most work. 
+	- Use dvisvgm but determine which letter is which by looking into
+      the coordinates of the curve. 
+	- Use pdf2svg: This seems to put the objects in the right order. 
+	  However, this program does not outline the strokes (instead it
+	  uses stroke thickness for e.g. the overbar of sqrt). So, in this
+	  case, we should consider using inkscape to convert all objects to
+      paths. This might not be future safe because the uncertainty of
+      pdf2svg and inkscape functionality which may both change. 
+
+
