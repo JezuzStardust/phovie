@@ -3,8 +3,8 @@ from mathutils import Vector
 import math
 from importlib import resources, reload
 import os
-import jens # Only to get path to background image
-from jens import generate_text
+import phovie # Only to get path to background image
+from phovie import generate_text
 reload(generate_text)
 
 # This should probably just be a set of functions.

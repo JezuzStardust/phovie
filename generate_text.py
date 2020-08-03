@@ -14,7 +14,7 @@ import hashlib
 from importlib import resources
 import subprocess
 
-from jens import templates
+from phovie import templates
 
 # TODO: Consider generating a single object in Blender instead of a new collection. 
 # TODO: Refactor into several functions.
