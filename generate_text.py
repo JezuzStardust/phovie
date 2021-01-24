@@ -16,11 +16,11 @@ from importlib import resources
 import subprocess
 
 from phovie import templates
+import svgparser.svgparser 
 
 
 blender_file_path = bpy.path.abspath('//')
 latex_directory = blender_file_path + 'latex-file/' # TODO: Make name a constant.
-
 
 def generate_text_collection(texcode, collection_to_move_to=None):
     """Generates a new collection with curve object from a string with LaTeX-commands or text.
@@ -44,9 +44,11 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     # Then we can use e.g. os.path.split etc to convert 
     # filenames and endings when needed. 
     
-    # print('svg_file_path = ' + svg_file_path)
-    bpy.ops.import_curve.svg(filepath=file_path + '.svg')
+    # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + '.svg'
+    ld = svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg')
+    ld.parse()
+    ld.create_blender_splines()
     
     
     # Scales each curve. 
