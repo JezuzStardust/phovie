@@ -16,7 +16,7 @@ from importlib import resources
 import subprocess
 
 from phovie import templates
-import svgparser.svgparser 
+import phovie.svgparser.svgparser 
 
 
 blender_file_path = bpy.path.abspath('//')
@@ -46,9 +46,9 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     
     # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + '.svg'
-    ld = svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg')
-    ld.parse()
-    ld.create_blender_splines()
+    parser = phovie.svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg')
+    parser.parse()
+    parser.create_blender_splines()
     
     
     # Scales each curve. 
