@@ -12,7 +12,7 @@ import importlib # importlib.reload
 
 def clear_scene():
     """Clears all Blender data in the Blender scene."""
-    
+
     for data_list in (
         bpy.data.cameras,
         bpy.data.collections,
@@ -23,10 +23,9 @@ def clear_scene():
         bpy.data.objects,
         bpy.data.particles,
         bpy.data.worlds):
-        
+
         for data in data_list:
             data_list.remove(data)
-
 
 def reload_modules(print_to_console=False):
     """Reloads all custom modules (modules that starts with 'jens').
@@ -50,8 +49,8 @@ def reload_modules(print_to_console=False):
         if print_to_console:
             print('Reloading ' + module_name)
         importlib.reload(sys.modules[module_name])
-        
-        
+
+
 if __name__ == '__main__':
     clear_scene() 
     reload_modules(True)
