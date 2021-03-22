@@ -44,7 +44,7 @@ def reload_modules(print_to_console=False):
     if print_to_console:
         print("Reloading all custom modules.")
         
-    module_names = [module for module in sys.modules.keys() if module.startswith('jens')]
+    module_names = [module for module in sys.modules.keys() if module.startswith('phovie')]
     for module_name in module_names:
         if print_to_console:
             print('Reloading ' + module_name)
