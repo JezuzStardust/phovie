@@ -21,6 +21,7 @@
 # Additions and mofications: 
 # Copyright (C) 2020 Jens Zamanian, https://github.com/JezuzStardust
 
+
 import xml.dom.minidom
 import re
 import bpy
@@ -661,6 +662,13 @@ class SVGGeometrySVG(SVGGeometryContainer):
     # the outer SVGGeometrySVG instance (a value in context that is only occupied
     # if is empty. The outer will be the first one to be parsed. 
 
+    def __init__(self, node, context): 
+        super().__init__(node, context) 
+        # If this is the outer most SVG, then store this instance in 
+        # the dictionary for later use. 
+        if not self._context['outer_SVG']:
+            self._context['outer_SVG'] = self
+
     def parse(self):
         """
         Parse the attributes of the SVG element. 
@@ -790,8 +798,7 @@ class SVGGeometrySVG(SVGGeometryContainer):
             e_y = 0
             e_width = svg_parse_coord('100%', current_viewBox[2])
             e_height = svg_parse_coord('100%', current_viewBox[3])
-        # TODO: 
-        # In case the outermost SVG does not have a width and height specified
+        # TODO: In case the outermost SVG does not have a width and height specified
         # they are defaulted to 100%. 
         # The values will then be resolved against the default 
         # viewBox="0 0 0 0"
@@ -800,12 +807,14 @@ class SVGGeometrySVG(SVGGeometryContainer):
         # since it causes problems for internal SVG's which 
         # have width and/or height = 0 (which should not be rendered at all. 
         # However, this is a strange limit case. 
+        # Does it work to simply put the default viewbox to 0 0 100 100 in the context?
         if e_width == 0.0:
             e_width = 100.0
         if e_height == 0.0:
             e_height = 100.0
         # TODO: Handle 'none'. 
         # This might actually handled by accident by the code below.
+
         pARx = preserveAspectRatio[0]
         pARy = preserveAspectRatio[1]
         meetOrSlice = preserveAspectRatio[2]
@@ -820,6 +829,7 @@ class SVGGeometrySVG(SVGGeometryContainer):
             vb_y = 0
             vb_width = e_width 
             vb_height = e_height
+
         scale_x = e_width / vb_width 
         scale_y = e_height / vb_height 
         if meetOrSlice == 'meet': # Must also check that align is not none. 
@@ -837,7 +847,32 @@ class SVGGeometrySVG(SVGGeometryContainer):
             translate_y += (e_height - vb_height * scale_y) / 2 
         if pARy == 'YMax':
             translate_y += (e_height - vb_height * scale_y) 
+
         m = Matrix()
+        
+        # Position the origin in the correct place. 
+        if self._context['outer_SVG'] is self:
+            position = self._context['origin']
+            pos_v = position[0]
+            if pos_v == 'T': 
+                o_pos_v = 0
+            elif pos_v == 'M':
+                o_pos_v = -e_height / 2 
+            elif pos_v == 'B':
+                o_pos_v = -e_height
+
+            pos_h = position[1]
+            if pos_h == 'L':
+                o_pos_h = 0
+            elif pos_h == 'C':
+                o_pos_h = -e_width / 2
+            elif pos_h == 'R':
+                o_pos_h = -e_width 
+
+            depth = svg_parse_coord(self._context['depth'])
+
+            m = m @ Matrix.Translation(Vector((o_pos_h, o_pos_v + depth, 0)))
+
         m = m @ Matrix.Translation(Vector((translate_x, translate_y , 0)))
         m = m @ Matrix.Scale(scale_x, 4, Vector((1, 0, 0)))
         m = m @ Matrix.Scale(scale_y, 4, Vector((0, 1, 0)))
@@ -1762,10 +1797,11 @@ class SVGLoader(SVGGeometryContainer):
     Parses an SVG file and creates curve objects in Blender.
     """
     # TODO: Fix so that this is done like in the original plugin (e.g. do_colormanage)
-    def __init__(self, blender_context, svg_filepath):
+    def __init__(self, blender_context, svg_filepath, origin = 'TL', depth = '1.94397pt'):
         """ 
         Initializes the loader.
         All geometries will be contained by this instance.
+        depth is how far below the baseline the character goes, e.g. a 'g' or 'j'
         """
         svg_name = os.path.basename(svg_filepath)
         scene = blender_context.scene
@@ -1795,5 +1831,7 @@ class SVGLoader(SVGGeometryContainer):
                    'do_colormanage': True, # TODO: Calculate this instead by checking if Bl has display device. 
                    'outer_SVG': None, # Keep track of the outermost SVG. Will be used to 
                    # find an overall transformation to move around the origin of the geometry. 
+                   'origin': origin, # Where the origin should be set (T, M, B, + L, C, R)
+                   'depth': depth,
                    }
         super().__init__(node, context)
