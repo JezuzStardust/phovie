@@ -14,10 +14,12 @@ import os
 import hashlib
 from importlib import resources
 import subprocess
-
+import re
 from phovie import templates
 import phovie.svgparser.svgparser 
 
+pattern = r'(depth=([+-]?(\d+(\.\d*)?|[+-]?(\.\d+))([eE][+-]?\d+)?)pt)'
+re_pattern = re.compile(pattern)
 
 blender_file_path = bpy.path.abspath('//')
 latex_directory = blender_file_path + 'latex-file/' # TODO: Make name a constant.
@@ -31,7 +33,7 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     if not os.path.exists(latex_directory):
         make_directory(latex_directory)
         
-    name = gen_hash(texcode)
+    name = gen_hash(texcode) # TODO: If another instance is already imported the actual name will be different. 
     file_path = latex_directory + name
     
     gen_latex_source(texcode, latex_directory, name)
@@ -46,7 +48,7 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     
     # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + '.svg'
-    parser = phovie.svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg')
+    parser = phovie.svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg', origin = 'BL')
     parser.parse()
     parser.create_blender_splines()
     
@@ -89,7 +91,7 @@ def gen_latex_source(texcode, directory, name):
     
     return file_path
 
-    
+
 def gen_dvi(texcode, directory, name):
     """DOCSTRING"""
     print('----------Generating dvi-file.----------')
@@ -105,7 +107,7 @@ def gen_dvi(texcode, directory, name):
     # Add check and output logfile for latex in case it failes
     # See manimlib/utils/tex_file_writing.py line 66-72. 
 
-    
+
 def gen_svg(file_path):
     """Generates the svg file from the dvi file."""
     # TODO: Parse the baseline from the out argument. 
@@ -121,6 +123,10 @@ def gen_svg(file_path):
             )
     proc = subprocess.Popen([svg_command], stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
+    print('start')
+    for p in re_pattern.findall(str(out)):
+        print('hej',p)
+    print('end')
     print(out) # Use this to parse baseline??? 
     
 
