@@ -33,7 +33,8 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     if not os.path.exists(latex_directory):
         make_directory(latex_directory)
         
-    name = gen_hash(texcode) # TODO: If another instance is already imported the actual name will be different. 
+    # TODO: If another instance is already imported the actual name will be different (added .001, etc). 
+    name = gen_hash(texcode) 
     file_path = latex_directory + name
     
     gen_latex_source(texcode, latex_directory, name)
@@ -48,25 +49,23 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     
     # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + '.svg'
-    parser = phovie.svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg', origin = 'BL')
+    parser = phovie.svgparser.svgparser.SVGLoader(bpy.context, file_path + '.svg', origin = 'MC')
     parser.parse()
     parser.create_blender_splines()
-    
-    
+
     # Scales each curve. 
+    # TODO: Scale should perhaps be a parameter. 
     for object in bpy.data.collections[coll_name].objects: 
         object.name = name
         object.scale = (100,100,100)
     return bpy.data.collections[coll_name].objects
-    
-    
+
 def make_directory(latex_directory):
     """ Creates the directory to store the output files. 
     These files can in general be discarded afterwards."""
     print('Make directory')
     os.system("mkdir -p " + '"' + latex_directory + '"')
-    
-    
+
 def gen_hash(expression): #, template_tex_file_body):
     """Generates a hash based on the expression. 
     This is used to give a unique name."""
