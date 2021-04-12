@@ -15,3 +15,9 @@ There are some possible workarounds:
       pdf2svg and inkscape functionality which may both change. 
 
 
+
+Problems to solve:
+- When adding an object with a name that is already taken, Blender adds .001, .002, etc to the object name. We must somehow catch this so that we can keep a reference to the correct object. 
+
+
+
