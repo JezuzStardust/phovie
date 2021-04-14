@@ -30,7 +30,6 @@ from math import tan, sin, cos, acos, sqrt, pi
 import os
 from svgparser import svgcolors
 
-
 ### Reading Coordinates ###
 # For 96 dpi:  
 # 1 in = 96 px 
@@ -41,19 +40,9 @@ from svgparser import svgcolors
 # TODO: Fix em an ex if text handling is added.
 # The em and ex are relative to the font-size if present.  
 # E.g. if font-size="150" is used, then 1 em = 150 px. 
-# Em units. Equivalent to the computed font-size in effect for an element.
-# Ex units. Equivalent to the height of a lower-case letter in the font.
+# em units. Equivalent to the computed font-size in effect for an element.
+# ex units. Equivalent to the height of a lower-case letter in the font.
 # If the font doesn’t include lower-case letters, or doesn’t include the metadata about the ex-height, then 1ex = 0.5em.
-# SVG_UNITS = {'': 1.0,
-#         'px': 1.0,
-        # 'in': 90.0,
-        # 'mm': 90.0 / 25.4,
-        # 'cm': 90.0 / 2.54,
-        # 'pt': 1.25, # 1 / 72 in = 90 / 72 px 
-        # 'pc': 15.0,
-        # 'em': 1.0,
-        # 'ex': 1.0
-        # }
 
 SVG_UNITS = {'': 1.0,
         'px': 1.0,
@@ -73,8 +62,8 @@ SVG_UNITS = {'': 1.0,
 # Breakdown:
 # Optional minus sign
 # One or more digits
-# Optional group: . followed by zero or more digits. 
-# Optional group e or E followed by optional sign followed by one or more digits. 
+# Optional group: Period followed by zero or more digits. 
+# Optional group: e or E followed by optional sign followed by one or more digits. 
 # The optional pattern after | is for the cases where the integer part is not present. 
 match_number = r'([+-]?(\d+(\.\d*)?|[+-]?(\.\d+))([eE][+-]?\d+)?)'
 # match_number = r'(-?\d+(\.\d*)?([eE][-+]?\d+)?)|(-?\.\d+([eE][-+]?\d+)?)' 
@@ -642,7 +631,8 @@ class SVGGeometryContainer(SVGGeometry):
         Does not call the creation for SYMBOLS and DEFS, instead
         they will be created via a USE element. 
         """
-        # TODO: Should transform be pushed here? 
+        # TODO: Instead of creating the Blender splines, we should 
+        # return them. 
         self._push_style(self._style)
         for geom in self._geometries:
             if geom.__class__ not in (SVGGeometrySYMBOL, SVGGeometryDEFS):
