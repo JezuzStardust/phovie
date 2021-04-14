@@ -1,10 +1,10 @@
-SVG-import
+SVG-import - FIXED!
 There is a problem with importing svg-files created from dvisvgm. 
 They are not automatically arranged in a suitable order. 
 
 There are some possible workarounds:
 	- Create your own importer of svg-files. This would be the 
-	  safest way, but it also requires most work. 
+	  safest way, but it also requires most work. - DONE!
 	- Use dvisvgm but determine which letter is which by looking into
       the coordinates of the curve. 
 	- Use pdf2svg: This seems to put the objects in the right order. 
@@ -15,9 +15,25 @@ There are some possible workarounds:
       pdf2svg and inkscape functionality which may both change. 
 
 
-
-Problems to solve:
+Naming problems
 - When adding an object with a name that is already taken, Blender adds .001, .002, etc to the object name. We must somehow catch this so that we can keep a reference to the correct object. 
+
+Restructure: 
+Currently the svg importer is responsible for creating the geometry on screen. 
+It is better to keep everything in Python for as long as possible. 
+This means that we should probably store the results of the SVG-importer is separate phobject (phovie objects).
+For example, a LaTeX text object should include the following: 
+	- A list of all the curves that need to be created. 
+
+A phobject should be able to contain subphobjects. 
+	- E.g. a LaTeX text can be divided into multiple subparts. 
+	
+
+LaTeX text
+- In order to be able to handle parts of different LaTeX text separately, we must do the following: 
+	- LaTeX the full object creating an SVG file which is then parsed into separate curves. 
+	- LaTeX the first subpart of the text and count the number of curves it contains. Store this number of curves from the first object into subobject 1. 
+	- Continue like this until all parts have been stored away. 
 
 
 
