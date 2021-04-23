@@ -3,37 +3,38 @@ from mathutils import Vector
 import math
 from importlib import resources, reload
 import os
-import phovie # Only to get path to background image
+import phovie  # Only to get path to background image
 from phovie import generate_text
+
 reload(generate_text)
 
 # This should probably just be a set of functions.
-# Hmmm... or perhaps each Clip should be a separate 
-# scene to render. 
-# However, many of the functions are general purpose and 
-# can be moved elsewhere. 
+# Hmmm... or perhaps each Clip should be a separate
+# scene to render.
+# However, many of the functions are general purpose and
+# can be moved elsewhere.
 
-class Clip():
-    
-    def __init__(self, name='Collection', background=None):
-        self.clear_collections() # Better to use utility function. 
+
+class Clip:
+    def __init__(self, name="Collection", background=None):
+        self.clear_collections()  # Better to use utility function.
         self.collection = self.make_new_collection(name)
         self.name = self.collection.name
         self.camera = self.make_camera()
-        self.set_background(background) 
+        self.set_background(background)
         # Set lights
         # Set objects
-        
+
         # Set units
-        #bpy.context.scene.unit_settings.scale_lengt = 0.01
-    
+        # bpy.context.scene.unit_settings.scale_lengt = 0.01
+
     def clear_collections(self):
-        # Delete all the objects in a collection. 
+        # Delete all the objects in a collection.
         objs = bpy.data.objects
         for obj in objs:
             objs.remove(obj, do_unlink=True)
-        
-        # Delete all collections. 
+
+        # Delete all collections.
         for coll in bpy.data.collections:
             bpy.data.collections.remove(coll)
 
@@ -41,14 +42,14 @@ class Clip():
         col = bpy.data.collections.new(name)
         bpy.context.scene.collection.children.link(col)
         return col
-       
+
     def make_camera(self):
-        cam = bpy.data.cameras.new('Camera')
-        camera_obj = bpy.data.objects.new('Camera', cam)
+        cam = bpy.data.cameras.new("Camera")
+        camera_obj = bpy.data.objects.new("Camera", cam)
         self.collection.objects.link(camera_obj)
-        #camera = bpy.data.objects['Camera']
+        # camera = bpy.data.objects['Camera']
         cam.lens = 50
-        camera_obj.location = Vector((0,0,10))
+        camera_obj.location = Vector((0, 0, 10))
         bpy.context.scene.camera = camera_obj
         return camera_obj
 
@@ -56,33 +57,41 @@ class Clip():
 
         if not background:
             module_path = os.path.abspath(phovie.__file__)
-            background = phovie.__path__[0] + '/images/studio_light_small.hdr'
+            background = phovie.__path__[0] + "/images/studio_light_small.hdr"
         # The get method returns the worlds['World'] if it exists
-        # otherwise it creates a new one. 
-        world = bpy.data.worlds.get('World', bpy.data.worlds.new('World'))
+        # otherwise it creates a new one.
+        world = bpy.data.worlds.get("World", bpy.data.worlds.new("World"))
         world.use_nodes = True
         # Environment texture node
-        environment_texture_node = world.node_tree.nodes.new('ShaderNodeTexEnvironment')
-        environment_texture_node.location = (-400,300) 
+        environment_texture_node = world.node_tree.nodes.new("ShaderNodeTexEnvironment")
+        environment_texture_node.location = (-400, 300)
         image = bpy.data.images.load(background)
         environment_texture_node.image = image
         # Background node
-        background_node = world.node_tree.nodes['Background']
+        background_node = world.node_tree.nodes["Background"]
         # Connect them...
-        world.node_tree.links.new(background_node.inputs['Color'], environment_texture_node.outputs['Color'])
-        # Vector mapping node 
+        world.node_tree.links.new(
+            background_node.inputs["Color"], environment_texture_node.outputs["Color"]
+        )
+        # Vector mapping node
         vector_mapping_node = world.node_tree.nodes.new("ShaderNodeMapping")
-        vector_mapping_node.location = (-700,300) 
-        # Connect.. 
-        world.node_tree.links.new(environment_texture_node.inputs['Vector'], vector_mapping_node.outputs['Vector'])
+        vector_mapping_node.location = (-700, 300)
+        # Connect..
+        world.node_tree.links.new(
+            environment_texture_node.inputs["Vector"],
+            vector_mapping_node.outputs["Vector"],
+        )
         # Texture coordinate node
         texture_coords_node = world.node_tree.nodes.new("ShaderNodeTexCoord")
-        # Connect it. 
-        texture_coords_node.location = (-1000,300) 
-        world.node_tree.links.new(vector_mapping_node.inputs['Vector'], texture_coords_node.outputs['Generated'])
+        # Connect it.
+        texture_coords_node.location = (-1000, 300)
+        world.node_tree.links.new(
+            vector_mapping_node.inputs["Vector"],
+            texture_coords_node.outputs["Generated"],
+        )
 
         # TODO: Fix so that it uses the actual scene in case this was changed.
-        bpy.data.scenes['Scene'].world = world # Link world to scene. 
+        bpy.data.scenes["Scene"].world = world  # Link world to scene.
         # Testing...
-        generate_text.generate_text_collection(r'Phovie')
-        generate_text.generate_text_collection(r'Physics Movies')
+        generate_text.generate_text_collection(r"Phovie")
+        generate_text.generate_text_collection(r"Physics Movies")
