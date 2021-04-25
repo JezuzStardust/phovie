@@ -488,31 +488,29 @@ class SVGGeometry:
             # According the SVG 1.1 specification, if only three hexdigits
             # are given, they should each be repeated twice.
             if len(color) == 4:
-                color = color[0] + color[1] * 2 + color[2] * 2 + color[3] * 2
-            diff = (int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16))
+                diff = color[0] + color[1] * 2 + color[2] * 2 + color[3] * 2
+            diff = (int(diff[1:3], 16), int(diff[3:5], 16), int(diff[5:7], 16))
             diffuse_color = [x / 255 for x in diff]
-            print('diffuse unsued', diffuse_color)
         elif color in svgcolors.SVG_COLORS:
+            name = color
             diff = svgcolors.SVG_COLORS[color]
             diffuse_color = [x / 255 for x in diff]
         elif svgutils.re_match_rgb.match(color): 
             diff = svgutils.re_match_rgb.findall(color)[0]
-            if diff[1] == '%': # check also diff[3], diff[5] 
+            # If given as % we have diff[1] == diff[3] == diff[5] == %
+            if diff[1] == '%': 
                 diffuse_color = [int(diff[0])/100, int(diff[2])/100, int(diff[4])/100]
             else:
-                print("else here")
                 diffuse_color = [int(diff[0])/255, int(diff[2])/255, int(diff[4])/255]
-            print('diffuse color', diffuse_color)
         else:
             return None
+
 
         if self._context["do_colormanage"]:
             diffuse_color = [srgb_to_linear(x) for x in diffuse_color]
 
-        # TODO: Should also check if there is not already a material
-        # in Blender with the same name and reuse it.
         mat = bpy.data.materials.new(name="SVG_" + color)
-        # Set material both in default material and node tree to same color.
+        # Set material both in Blender default material and node based material. 
         # Otherwise switching to node tree eliminates the color.
         mat.diffuse_color = (*diffuse_color, 1.0)
         mat.use_nodes = True
@@ -520,7 +518,6 @@ class SVGGeometry:
             *diffuse_color,
             1.0,
         )
-
         # Add the material to the materials stack.
         self._context["materials"][color] = mat
 
