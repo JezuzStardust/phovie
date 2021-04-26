@@ -21,7 +21,6 @@
 # Additions and modifications:
 # Copyright (C) 2020 Jens Zamanian, https://github.com/JezuzStardust
 
-
 # TODO:
 # - Refactor code. Should some parts be put into a separate utility file?
 # - Currently this creates Blender splines and adds them to Blender. 
@@ -43,79 +42,7 @@ import xml.dom.minidom
 from . import svgcolors
 from . import svgutils
 
-### Regexp Patterns ###
-# TODO: Consider making these class variables in their specific classes.
-
-# Match transform e.g. skewX(23)
-# First match group is name of transform and
-# second group is parameters.
-# Breakdown:
-# Zero or more spaces \s*
-# Followed by one or more letters ([A-z]+), first capture group
-# Followed by zero or more spaces \s*
-# Followed by left parenthesis \(
-# Followed by one or more (as few as possible) characters, *? means lazy, second capture group
-# Followed by right parenthesis
-match_transform = r"\s*([A-z]+)\s*\((.*?)\)"
-re_match_transform = re.compile(match_transform)
-
-# Match a float or a letter.
-# (?:...) is a non-capturing group. We do not need the individual components.
-# TODO: Perhaps make use of match_number pattern above.
-match_float_or_letter = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)|\w"
-re_match_float_or_letter = re.compile(match_float_or_letter)
-
 ### Utility Functions ###
-
-
-# REMOVE
-# def read_float(text, start_index=0):
-#     """
-#     Reads a float value from a string, starting from start_index.
-
-#     Returns the value as a string and the index to the first character after the value.
-#     """
-
-#     n = len(text)
-
-#     # Skip leading white spaces and commas.
-#     while start_index < n and (text[start_index].isspace() or text[start_index] == ","):
-#         start_index += 1
-
-#     if start_index == n:
-#         return "0", start_index
-
-#     text_part = text[start_index:]
-#     match = re_match_number.match(text_part)
-
-#     if match is None:
-#         raise Exception(
-#             "Invalid float value near " + text[start_index : start_index + 10]
-#         )
-
-#     value_string = match.group(0)
-#     end_index = start_index + match.end(0)
-
-#     return value_string, end_index
-# END REMOVE 
-
-# REMOVE
-# def svg_parse_coord(coord, size=0):  # Perhaps the size should always be used.
-#     """
-#     Parse a coordinate component from a string.
-#     Converts the number to a common unit (pixels).
-#     The size of the surrounding dimension is used in case
-#     the value is given in percentage.
-#     """
-#     value_string, end_index = read_float(coord)
-#     value = float(value_string)
-#     unit = coord[end_index:].strip()  # removes extra spaces.
-#     if unit == "%":
-#         return float(size) / 100 * value
-#     else:
-#         return value * SVG_UNITS[unit]
-# END REMOVE
-
 
 def srgb_to_linear(color):
     """
@@ -337,7 +264,7 @@ class SVGGeometry:
         transform = self._node.getAttribute("transform")
         m = Matrix()
         if transform:
-            for match in re_match_transform.finditer(transform):
+            for match in svgutils.re_match_transform.finditer(transform):
                 trans = match.group(1)
                 params = match.group(2)
                 params = params.replace(",", " ").split()
@@ -504,7 +431,6 @@ class SVGGeometry:
                 diffuse_color = [int(diff[0])/255, int(diff[2])/255, int(diff[4])/255]
         else:
             return None
-
 
         if self._context["do_colormanage"]:
             diffuse_color = [srgb_to_linear(x) for x in diffuse_color]
@@ -728,18 +654,9 @@ class SVGGeometrySVG(SVGGeometryContainer):
     def _parse_preserveAspectRatio(self):
         # TODO: Handle cases where it starts with 'defer' (and ignore this case).
         # TODO: Handle 'none'. However, see _view_to_transform. Might be OK as is.
-        # TODO: Move this outside of the function later.
         preserveAspectRatio = self._node.getAttribute("preserveAspectRatio")
-        # group(0) matches all
-        # group(1) matches align (either none or e.g. xMinYMax)
-        # group(2) matches comma + align variable.
-        # group(3) matches comma-wsp
-        # group(4) matches meetOrSlice.
-        # Option 'defer' is not handled.
         if preserveAspectRatio:
-            pattern = r"\s*([A-z]+)((\s*,\s*|\s+)([A-z]+))?"
-            regex = re.compile(pattern)
-            for match in regex.finditer(preserveAspectRatio):
+            for match in svgutils.re_match_align_meet_or_slice.finditer(preserveAspectRatio):
                 align = match.group(1)
                 meetOrSlice = match.group(4)
         else:
@@ -805,7 +722,7 @@ class SVGGeometrySVG(SVGGeometryContainer):
         if e_height == 0.0:
             e_height = 100.0
         # TODO: Handle 'none'.
-        # This might actually handled by accident by the code below.
+        # This might actually handled 'by accident' by the code below.
 
         pARx = preserveAspectRatio[0]
         pARy = preserveAspectRatio[1]
@@ -1700,7 +1617,7 @@ class SVGPATHDataSupplier:
     def __init__(self, d):
 
         self._data = []
-        for entry in re_match_float_or_letter.findall(d):
+        for entry in svgutils.re_match_float_or_letter.findall(d):
             # Each entry is either a number (integer or float) or a letter.
             self._data.append(entry)
         self._index = 0

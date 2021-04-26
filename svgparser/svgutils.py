@@ -24,6 +24,35 @@ re_match_number = re.compile(match_number)
 match_rgb = r"rgb\(\s*(\d+)(%)?\s*,\s*(\d+)(%)?\s*,\s*(\d+)(%)?\s*\)"
 re_match_rgb = re.compile(match_rgb)
 
+# Match a float or a letter.
+# (?:...) is a non-capturing group. We do not need the individual components.
+# TODO: Perhaps make use of match_number pattern above.
+match_float_or_letter = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)|\w"
+re_match_float_or_letter = re.compile(match_float_or_letter)
+
+# Match transform e.g. skewX(23)
+# First match group is name of transform and
+# second group is parameters.
+# Breakdown:
+# Zero or more spaces \s*
+# Followed by one or more letters ([A-z]+), first capture group
+# Followed by zero or more spaces \s*
+# Followed by left parenthesis \(
+# Followed by one or more (as few as possible) characters, *? means lazy, second capture group
+# Followed by right parenthesis
+match_transform = r"\s*([A-z]+)\s*\((.*?)\)"
+re_match_transform = re.compile(match_transform)
+
+# Match the align and meet or slice properties.  
+# group(0) matches all
+# group(1) matches align (either none or e.g. xMinYMax)
+# group(2) matches comma + align variable.
+# group(3) matches comma-wsp
+# group(4) matches meetOrSlice.
+# Option 'defer' is not handled.
+match_align_meet_or_slice = r"\s*([A-z]+)((\s*,\s*|\s+)([A-z]+))?"
+re_match_align_meet_or_slice = re.compile(pattern)
+
 ################################################################################
 # End: Regular Expressions
 ################################################################################
