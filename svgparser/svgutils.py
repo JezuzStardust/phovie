@@ -1,3 +1,26 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
+# <pep8 compliant>
+#
+# Based on the official Blender addon "Scalable Vector Graphics (SVG) 1.1 format" by JM Soler, Sergey Sharybin
+# Additions and modifications:
+# Copyright (C) 2020 Jens Zamanian, https://github.com/JezuzStardust
+
 import re
 
 ################################################################################
@@ -51,7 +74,7 @@ re_match_transform = re.compile(match_transform)
 # group(4) matches meetOrSlice.
 # Option 'defer' is not handled.
 match_align_meet_or_slice = r"\s*([A-z]+)((\s*,\s*|\s+)([A-z]+))?"
-re_match_align_meet_or_slice = re.compile(pattern)
+re_match_align_meet_or_slice = re.compile(match_align_meet_or_slice)
 
 ################################################################################
 # End: Regular Expressions
@@ -86,7 +109,6 @@ SVG_UNITS = {
     "ex": 1.0,
 }
 
-
 def svg_parse_coord(coord, size=0):  # Perhaps the size should always be used.
     """
     Parse a coordinate component from a string.
@@ -101,7 +123,6 @@ def svg_parse_coord(coord, size=0):  # Perhaps the size should always be used.
         return float(size) / 100 * value
     else:
         return value * SVG_UNITS[unit]
-
 
 def read_float(text, start_index=0):
     """
@@ -131,3 +152,44 @@ def read_float(text, start_index=0):
     end_index = start_index + match.end(0)
 
     return value_string, end_index
+
+def srgb_to_linear(color):
+    """
+    Convert sRGB values into linear color space values.
+
+    Input: color = single float value for one of the R, G, and B channels.
+    Returns: float
+
+    Blenders colors should be entered in linear color space if the
+    Display Device setting is either 'sRGB' or 'XYZ' (i.e. if it is
+    not 'None').
+    In this case we need to convert the sRGB values that SVG uses
+    into a linear color space.
+    Ref: https://entropymine.com/imageworsener/srgbformula/
+    """
+    if color < 0.04045:
+        return 0.0 if color < 0.0 else color / 12.92
+    else:
+        return (color + 0.055) ** 2.4
+
+
+# CONSTANTS
+
+SVG_EMPTY_STYLE = {
+    "fill": None,
+    "stroke": None,
+    "stroke-width": None,
+    "stroke-linecap": None,
+    "stroke-linejoin": None,
+    "stroke-miterlimit": None,
+}
+
+SVG_DEFAULT_STYLE = {
+    "fill": "#000000",
+    "stroke": "none",
+    "stroke-width": "none",
+    "stroke-linecap": "butt",
+    "stroke-linejoin": "miter",
+    "stroke-miterlimit": 4,
+}
+

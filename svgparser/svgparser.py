@@ -31,38 +31,46 @@
 #   3. The phovie classes should then be responsible for creating the Blender geometry. 
 #   4. Each element in the svg should create a separate subphobject. So a phobject should contain subphobject. 
 
+# TODO (longterm):
+# - Add more features of SVG. 
+#   - Opacity
+#   - Stroke (at least good enough). 
+#   - Gradients? Could be a fun problem. 
+#   - Other things?
+#   - More from the SVG 2.0 spec?
+#   - Filters?
+
 import bpy # May not be needed after rewriting. 
 from math import tan, sin, cos, acos, sqrt, pi # May not be needed later. Use numpy instead. 
 from mathutils import Matrix, Vector # May not be needed after rewriting.
 import os
-import re
 import numpy as np
 import xml.dom.minidom
 
 from . import svgcolors
 from . import svgutils
+from . import svgtransforms
 
 ### Utility Functions ###
 
-def srgb_to_linear(color):
-    """
-    Convert sRGB values into linear color space values.
+# def srgb_to_linear(color):
+#     """
+#     Convert sRGB values into linear color space values.
 
-    Input: color = single float value for one of the R, G, and B channels.
-    Returns: float
+#     Input: color = single float value for one of the R, G, and B channels.
+#     Returns: float
 
-    Blenders colors should be entered in linear color space if the
-    Display Device setting is either 'sRGB' or 'XYZ' (i.e. if it is
-    not 'None').
-    In this case we need to convert the sRGB values that SVG uses
-    into a linear color space.
-    Ref: https://entropymine.com/imageworsener/srgbformula/
-    """
-
-    if color < 0.04045:
-        return 0.0 if color < 0.0 else color / 12.92
-    else:
-        return (color + 0.055) ** 2.4
+#     Blenders colors should be entered in linear color space if the
+#     Display Device setting is either 'sRGB' or 'XYZ' (i.e. if it is
+#     not 'None').
+#     In this case we need to convert the sRGB values that SVG uses
+#     into a linear color space.
+#     Ref: https://entropymine.com/imageworsener/srgbformula/
+#     """
+#     if color < 0.04045:
+#         return 0.0 if color < 0.0 else color / 12.92
+#     else:
+#         return (color + 0.055) ** 2.4
 
 
 ### End: Utility Functions ###
@@ -70,23 +78,23 @@ def srgb_to_linear(color):
 
 ### Constants ###
 
-SVG_EMPTY_STYLE = {
-    "fill": None,
-    "stroke": None,
-    "stroke-width": None,
-    "stroke-linecap": None,
-    "stroke-linejoin": None,
-    "stroke-miterlimit": None,
-}
+# SVG_EMPTY_STYLE = {
+#     "fill": None,
+#     "stroke": None,
+#     "stroke-width": None,
+#     "stroke-linecap": None,
+#     "stroke-linejoin": None,
+#     "stroke-miterlimit": None,
+# }
 
-SVG_DEFAULT_STYLE = {
-    "fill": "#000",
-    "stroke": "none",
-    "stroke-width": "none",
-    "stroke-linecap": "butt",
-    "stroke-linejoin": "miter",
-    "stroke-miterlimit": 4,
-}
+# SVG_DEFAULT_STYLE = {
+#     "fill": "#000000",
+#     "stroke": "none",
+#     "stroke-width": "none",
+#     "stroke-linecap": "butt",
+#     "stroke-linejoin": "miter",
+#     "stroke-miterlimit": 4,
+# }
 
 # fill:                 Fill color. Should be initialized to black!
 # stroke:               Stroke color.
@@ -101,86 +109,85 @@ SVG_DEFAULT_STYLE = {
 ### Transformation Functions ###
 
 
-def svg_transform_translate(params):
-    """
-    Returns a translation matrix.
-    """
-    tx = float(params[0])
-    ty = float(params[1]) if len(params) > 1 else 0
-    m = Matrix.Translation(Vector((tx, ty, 0)))
-    return m
+# def svg_transform_translate(params):
+#     """
+#     Returns a translation matrix.
+#     """
+#     tx = float(params[0])
+#     ty = float(params[1]) if len(params) > 1 else 0
+#     m = Matrix.Translation(Vector((tx, ty, 0)))
+#     return m
 
 
-def svg_transform_scale(params):
-    """
-    Returns a scale matrix.
-    """
-    sx = float(params[0])
-    sy = float(params[1]) if len(params) > 1 else sx
-    m = Matrix.Scale(sx, 4, Vector((1, 0, 0)))
-    m = m @ Matrix.Scale(sy, 4, Vector((0, 1, 0)))
-    return m
+# def svg_transform_scale(params):
+#     """
+#     Returns a scale matrix.
+#     """
+#     sx = float(params[0])
+#     sy = float(params[1]) if len(params) > 1 else sx
+#     m = Matrix.Scale(sx, 4, Vector((1, 0, 0)))
+#     m = m @ Matrix.Scale(sy, 4, Vector((0, 1, 0)))
+#     return m
 
 
-def svg_transform_rotate(params):
-    """
-    Returns a rotation matrix.
-    """
-    angle = float(params[0]) * pi / 180
-    cx = cy = 0
-    if len(params) >= 3:
-        cx = float(params[1])
-        cy = float(params[2])
-    tm = Matrix.Translation(Vector((cx, cy, 0)))  # Translation
-    rm = Matrix.Rotation(angle, 4, Vector((0, 0, 1)))  # Rotation
-    # Translate (-cx, -cy), then rotate, then translate (cx, cy).
-    m = tm @ rm @ tm.inverted()
-    return m
+# def svg_transform_rotate(params):
+#     """
+#     Returns a rotation matrix.
+#     """
+#     angle = float(params[0]) * pi / 180
+#     cx = cy = 0
+#     if len(params) >= 3:
+#         cx = float(params[1])
+#         cy = float(params[2])
+#     tm = Matrix.Translation(Vector((cx, cy, 0)))  # Translation
+#     rm = Matrix.Rotation(angle, 4, Vector((0, 0, 1)))  # Rotation
+#     # Translate (-cx, -cy), then rotate, then translate (cx, cy).
+#     m = tm @ rm @ tm.inverted()
+#     return m
 
 
-def svg_transform_skewX(params):
-    """
-    Returns a skewX matrix.
-    """
-    angle = float(params[0]) * pi / 180
-    m = Matrix(((1.0, tan(angle), 0), (0, 1, 0), (0, 0, 1))).to_4x4()
-    return m
+# def svg_transform_skewX(params):
+#     """
+#     Returns a skewX matrix.
+#     """
+#     angle = float(params[0]) * pi / 180
+#     m = Matrix(((1.0, tan(angle), 0), (0, 1, 0), (0, 0, 1))).to_4x4()
+#     return m
 
 
-def svg_transform_skewY(params):
-    """
-    Returns a skewY matrix.
-    """
-    angle = float(params[0]) * pi / 180
-    m = Matrix(((1.0, 0, 0), (tan(angle), 1, 0), (0, 0, 1))).to_4x4()
-    return m
+# def svg_transform_skewY(params):
+#     """
+#     Returns a skewY matrix.
+#     """
+#     angle = float(params[0]) * pi / 180
+#     m = Matrix(((1.0, 0, 0), (tan(angle), 1, 0), (0, 0, 1))).to_4x4()
+#     return m
 
 
-def svg_transform_matrix(params):
-    """
-    Returns a matrix transform matrix.
-    """
-    a = float(params[0])
-    b = float(params[1])
-    c = float(params[2])
-    d = float(params[3])
-    e = float(params[4])
-    f = float(params[5])
-    m = Matrix(((a, c, 0, e), (b, d, 0, f), (0, 0, 1, 0), (0, 0, 0, 1)))
-    return m
+# def svg_transform_matrix(params):
+#     """
+#     Returns a matrix transform matrix.
+#     """
+#     a = float(params[0])
+#     b = float(params[1])
+#     c = float(params[2])
+#     d = float(params[3])
+#     e = float(params[4])
+#     f = float(params[5])
+#     m = Matrix(((a, c, 0, e), (b, d, 0, f), (0, 0, 1, 0), (0, 0, 0, 1)))
+#     return m
 
 
-SVG_TRANSFORMS = {
-    "translate": svg_transform_translate,
-    "scale": svg_transform_scale,
-    "rotate": svg_transform_rotate,
-    "skewX": svg_transform_skewX,
-    "skewY": svg_transform_skewY,
-    "matrix": svg_transform_matrix,
-}
+# SVG_TRANSFORMS = {
+#     "translate": svg_transform_translate,
+#     "scale": svg_transform_scale,
+#     "rotate": svg_transform_rotate,
+#     "skewX": svg_transform_skewX,
+#     "skewY": svg_transform_skewY,
+#     "matrix": svg_transform_matrix,
+# }
 
 ### End: Transformation Functions ###
-
 
 
 class SVGGeometry:
@@ -206,7 +213,7 @@ class SVGGeometry:
         """
         self._node = node
         self._transform = Matrix()
-        self._style = SVG_EMPTY_STYLE
+        self._style = svgutils.SVG_EMPTY_STYLE
         self._context = context
         self._name = None
 
@@ -236,9 +243,9 @@ class SVGGeometry:
         first, then parse the style-attribute (e.g. style='fill:blue;stroke:green'
         In SVG-files style="fill:blue;..." takes precedence over e.g. fill="blue".
         """
-        style = SVG_EMPTY_STYLE.copy()
+        style = svgutils.SVG_EMPTY_STYLE.copy()
 
-        for attr in SVG_EMPTY_STYLE.keys():
+        for attr in svgutils.SVG_EMPTY_STYLE.keys():
             val = self._node.getAttribute(attr)
             if val:
                 style[attr] = val.strip().lower()
@@ -252,7 +259,7 @@ class SVGGeometry:
                     continue
                 name = s[0].strip().lower()
                 val = s[1].strip()
-                if name in SVG_EMPTY_STYLE.keys():
+                if name in svgutils.SVG_EMPTY_STYLE.keys():
                     style[name] = val
         return style
 
@@ -268,7 +275,7 @@ class SVGGeometry:
                 trans = match.group(1)
                 params = match.group(2)
                 params = params.replace(",", " ").split()
-                transform_function = SVG_TRANSFORMS.get(trans)
+                transform_function = svgtransforms.SVG_TRANSFORMS.get(trans)
                 if transform_function is None:
                     raise Exception("Unknown transform function: " + trans)
                 m = m @ transform_function(params)
@@ -416,6 +423,8 @@ class SVGGeometry:
             # are given, they should each be repeated twice.
             if len(color) == 4:
                 diff = color[0] + color[1] * 2 + color[2] * 2 + color[3] * 2
+            else:
+                diff = color
             diff = (int(diff[1:3], 16), int(diff[3:5], 16), int(diff[5:7], 16))
             diffuse_color = [x / 255 for x in diff]
         elif color in svgcolors.SVG_COLORS:
@@ -433,7 +442,7 @@ class SVGGeometry:
             return None
 
         if self._context["do_colormanage"]:
-            diffuse_color = [srgb_to_linear(x) for x in diffuse_color]
+            diffuse_color = [svgutils.srgb_to_linear(x) for x in diffuse_color]
 
         mat = bpy.data.materials.new(name="SVG_" + color)
         # Set material both in Blender default material and node based material. 
@@ -458,13 +467,13 @@ class SVGGeometry:
         """
         style = self._style
         for sty in reversed(self._context["style_stack"]):
-            for key in SVG_EMPTY_STYLE.keys():
+            for key in svgutils.SVG_EMPTY_STYLE.keys():
                 if style[key] == None:
                     style[key] = sty[key]
 
-        for key in SVG_DEFAULT_STYLE:
+        for key in svgutils.SVG_DEFAULT_STYLE:
             if style[key] == None:
-                style[key] = SVG_DEFAULT_STYLE[key]
+                style[key] = svgutils.SVG_DEFAULT_STYLE[key]
         return style
 
     def _push_style(self, style):
@@ -1782,7 +1791,8 @@ class SVGLoader(SVGGeometryContainer):
     """
 
     # TODO: Fix so that this is done like in the original plugin (e.g. do_colormanage)
-    def __init__(self, blender_context, svg_filepath, origin="TL", depth="1.94397pt"):
+    # def __init__(self, blender_context, svg_filepath, origin="TL", depth="1.94397pt"):
+    def __init__(self, blender_context, svg_filepath, origin="TL", depth="0"):
         """
         Initializes the loader.
         All geometries will be contained by this instance.
