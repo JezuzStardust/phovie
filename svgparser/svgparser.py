@@ -51,148 +51,14 @@ from . import svgcolors
 from . import svgutils
 from . import svgtransforms
 
-### Utility Functions ###
-
-# def srgb_to_linear(color):
-#     """
-#     Convert sRGB values into linear color space values.
-
-#     Input: color = single float value for one of the R, G, and B channels.
-#     Returns: float
-
-#     Blenders colors should be entered in linear color space if the
-#     Display Device setting is either 'sRGB' or 'XYZ' (i.e. if it is
-#     not 'None').
-#     In this case we need to convert the sRGB values that SVG uses
-#     into a linear color space.
-#     Ref: https://entropymine.com/imageworsener/srgbformula/
-#     """
-#     if color < 0.04045:
-#         return 0.0 if color < 0.0 else color / 12.92
-#     else:
-#         return (color + 0.055) ** 2.4
-
-
-### End: Utility Functions ###
-
-
-### Constants ###
-
-# SVG_EMPTY_STYLE = {
-#     "fill": None,
-#     "stroke": None,
-#     "stroke-width": None,
-#     "stroke-linecap": None,
-#     "stroke-linejoin": None,
-#     "stroke-miterlimit": None,
-# }
-
-# SVG_DEFAULT_STYLE = {
-#     "fill": "#000000",
-#     "stroke": "none",
-#     "stroke-width": "none",
-#     "stroke-linecap": "butt",
-#     "stroke-linejoin": "miter",
-#     "stroke-miterlimit": 4,
-# }
-
-# fill:                 Fill color. Should be initialized to black!
-# stroke:               Stroke color.
-# stroke-width:         Width of the stroke.
-# stroke-linecap:       End cap of stroke (butt, round, square).
-# stroke-linejoin:      Shape of path joints (miter, round, bevel)
-# stroke-miterlimit:    How far, in stroke-width:s, the miter joint can stretch.
-
-### End: Constants ###
-
-
-### Transformation Functions ###
-
-
-# def svg_transform_translate(params):
-#     """
-#     Returns a translation matrix.
-#     """
-#     tx = float(params[0])
-#     ty = float(params[1]) if len(params) > 1 else 0
-#     m = Matrix.Translation(Vector((tx, ty, 0)))
-#     return m
-
-
-# def svg_transform_scale(params):
-#     """
-#     Returns a scale matrix.
-#     """
-#     sx = float(params[0])
-#     sy = float(params[1]) if len(params) > 1 else sx
-#     m = Matrix.Scale(sx, 4, Vector((1, 0, 0)))
-#     m = m @ Matrix.Scale(sy, 4, Vector((0, 1, 0)))
-#     return m
-
-
-# def svg_transform_rotate(params):
-#     """
-#     Returns a rotation matrix.
-#     """
-#     angle = float(params[0]) * pi / 180
-#     cx = cy = 0
-#     if len(params) >= 3:
-#         cx = float(params[1])
-#         cy = float(params[2])
-#     tm = Matrix.Translation(Vector((cx, cy, 0)))  # Translation
-#     rm = Matrix.Rotation(angle, 4, Vector((0, 0, 1)))  # Rotation
-#     # Translate (-cx, -cy), then rotate, then translate (cx, cy).
-#     m = tm @ rm @ tm.inverted()
-#     return m
-
-
-# def svg_transform_skewX(params):
-#     """
-#     Returns a skewX matrix.
-#     """
-#     angle = float(params[0]) * pi / 180
-#     m = Matrix(((1.0, tan(angle), 0), (0, 1, 0), (0, 0, 1))).to_4x4()
-#     return m
-
-
-# def svg_transform_skewY(params):
-#     """
-#     Returns a skewY matrix.
-#     """
-#     angle = float(params[0]) * pi / 180
-#     m = Matrix(((1.0, 0, 0), (tan(angle), 1, 0), (0, 0, 1))).to_4x4()
-#     return m
-
-
-# def svg_transform_matrix(params):
-#     """
-#     Returns a matrix transform matrix.
-#     """
-#     a = float(params[0])
-#     b = float(params[1])
-#     c = float(params[2])
-#     d = float(params[3])
-#     e = float(params[4])
-#     f = float(params[5])
-#     m = Matrix(((a, c, 0, e), (b, d, 0, f), (0, 0, 1, 0), (0, 0, 0, 1)))
-#     return m
-
-
-# SVG_TRANSFORMS = {
-#     "translate": svg_transform_translate,
-#     "scale": svg_transform_scale,
-#     "rotate": svg_transform_rotate,
-#     "skewX": svg_transform_skewX,
-#     "skewY": svg_transform_skewY,
-#     "matrix": svg_transform_matrix,
-# }
-
-### End: Transformation Functions ###
-
 
 class SVGGeometry:
-    """
-    Geometry base class.
+    """Geometry base class.
+
+    PARAMETERS
+    ----------
+    node : :class:`xml.dom.minidom.Document`
+    context : :class:`dict[]`
     """
 
     __slots__ = (
@@ -412,11 +278,17 @@ class SVGGeometry:
         in Blender.
         """
         # Parse the color according to the specification.
+        # If the material already exists, return it. 
         # Create a new Blender material with this color (using nodes).
         # Add the material to the material list in context.
 
-        if color in self._context["materials"]:
+        if color in self._context["materials"]: 
             return self._context["materials"][color]
+
+        # TODO: Should this be done? Perhaps we still would like different 
+        # svg imports to have different materials. 
+        if "SVG_" + color in bpy.data.materials:
+            return bpy.data.materials["SVG_" + color]
 
         if color.startswith("#"):
             # According the SVG 1.1 specification, if only three hexdigits
@@ -498,8 +370,7 @@ class SVGGeometry:
 
 
 class SVGGeometryContainer(SVGGeometry):
-    """
-    Container class for SVGGeometry.
+    """Container class for SVGGeometry.
     Since a container has attributes such as style, and transformations,
     it inherits from SVGGeometry.
     """
@@ -507,8 +378,7 @@ class SVGGeometryContainer(SVGGeometry):
     __slots__ = "_geometries"
 
     def __init__(self, node, context):
-        """
-        Initializes the container
+        """Initializes the container
         """
         super().__init__(node, context)
         self._geometries = []
@@ -533,24 +403,6 @@ class SVGGeometryContainer(SVGGeometry):
                 geometry_instance.parse()
                 self._geometries.append(geometry_instance)
 
-    def create_phovie_objects(self):
-        """
-        Create Phovie objects based on the geometries. 
-        """
-        # One svg file. 
-        # Multiple elements. 
-        # Each element should be a new object.
-        # All object should be added to a phobject as subphobjects. 
-        # We should use numpy. 
-        # Write this in concurrence with the other implementation.
-        # Perhaps save the other one actually since it may be needed later! 
-        self._push_style(self._style)
-        for geom in self._geometries:
-            if geom.__class__ not in (SVGGeometrySYMBOL, SVGGeometryDEFS):
-                geom.create_blender_splines()
-        self._pop_style()
-        
-
     def create_blender_splines(self):
         """
         Make all children elements create splines in Blender.
@@ -565,6 +417,24 @@ class SVGGeometryContainer(SVGGeometry):
             if geom.__class__ not in (SVGGeometrySYMBOL, SVGGeometryDEFS):
                 geom.create_blender_splines()
         self._pop_style()
+
+    def create_phovie_objects(self):
+        """
+        Create Phovie objects based on the geometries. 
+        """
+        # One svg file. 
+        # Multiple elements. 
+        # Each element should be a new object.
+        # All object should be added to a phobject as subphobjects. 
+        # We should use numpy. 
+        # Write this in concurrence with the other implementation.
+        # Perhaps save the other one actually since it may be needed later! 
+        self._push_style(self._style)
+        for geom in self._geometries:
+            if geom.__class__ not in (SVGGeometrySYMBOL, SVGGeometryDEFS):
+                geom.create_phovie_objects()
+        self._pop_style()
+        
 
 
 class SVGGeometrySVG(SVGGeometryContainer):
@@ -915,9 +785,85 @@ class SVGGeometryRECT(SVGGeometry):
         self._add_points_to_blender(coords, spline)
         self._pop_transform(self._transform)
 
+    def create_phovie_object(self):
+        """
+        Create Blender geometry.
+        """
+        vB = self._context["current_viewBox"][2:]  # width and height of viewBox.
+        x = svgutils.svg_parse_coord(self._x, vB[0])
+        y = svgutils.svg_parse_coord(self._y, vB[1])
+        w = svgutils.svg_parse_coord(self._width, vB[0])
+        h = svgutils.svg_parse_coord(self._height, vB[1])
+        rx = ry = 0
+        rad_x = self._rx
+        rad_y = self._ry
+        # For radii rx and ry, resolve % values against half the width and height,
+        # respectively. It is not clear from the specification which width
+        # and height are considered.
+        # In SVG 2.0 it seems to indicate that it should be the width and height
+        # of the rectangle. However, to be consistent with other % it is
+        # most likely the width and height of the current viewBox.
+        # If only one is given then the other one should be the same.
+        # Then clamp the values to width/2 respectively height/2.
+        # 100% means half the width or height of the viewBox (or viewport).
+        # https://www.w3.org/TR/SVG11/shapes.html#RectElement
+        rounded = True
+        if rad_x != "0" and rad_y != "0":
+            rx = min(svgutils.svg_parse_coord(rad_x, vB[0]), w / 2)
+            ry = min(svgutils.svg_parse_coord(rad_y, vB[1]), h / 2)
+        elif rad_x != "0":
+            rx = min(svgutils.svg_parse_coord(rad_x, vB[0]), w / 2)
+            ry = min(rx, h / 2)
+        elif rad_y != "0":
+            ry = min(svgutils.svg_parse_coord(rad_y, vB[1]), h / 2)
+            rx = min(ry, w / 2)
+        else:
+            rounded = False
+        # Approximation of elliptic curve for corner.
+        # Put the handles semi minor(or major) axis radius times
+        # factor = (sqrt(7) - 1)/3 away from Bezier point.
+        # http://www.spaceroots.org/documents/ellipse/elliptical-arc.pdf
+        factor_x = rx * (sqrt(7) - 1) / 3
+        factor_y = ry * (sqrt(7) - 1) / 3
+        # TODO: Probably better to use a specific class for all Bezier curves.
+
+        if rounded:
+            # (coordinate, handle_left, handle_right)
+            # If a handle is None, it means that it will be a straight line 
+            # (vector handle).
+            coords = [
+                ((x + rx, y), (x + rx - factor_x, y), None),
+                ((x + w - rx, y), None, (x + w - rx + factor_x, y)),
+                ((x + w, y + ry), (x + w, y + ry - factor_y), None),
+                ((x + w, y + h - ry), None, (x + w, y + h - ry + factor_y)),
+                ((x + w - rx, y + h), (x + w - rx + factor_x, y + h), None),
+                ((x + rx, y + h), None, (x + rx - factor_x, y + h)),
+                ((x, y + h - ry), (x, y + h - ry + factor_y), None),
+                ((x, y + ry), None, (x, y + ry - factor_y)),
+            ]
+        else:
+            coords = [
+                ((x, y), None, None),
+                ((x + w, y), None, None),
+                ((x + w, y + h), None, None),
+                ((x, y + h), None, None),
+            ]
+        
+        # TODO: Move this to a general purpose function.
+        # Perhaps name can be defined in SVGGeometry even, since
+        # all elements can have names.
+        if not self._name:
+            self._name = "Rect"
+
+        spline = self._new_blender_curve(self._name, True)
+        self._push_transform(self._transform)
+        self._add_points_to_blender(coords, spline)
+        self._pop_transform(self._transform)
+
     def _new_point(
         coordinate, handle_left=None, handle_right=None, in_type=None, out_type=None
     ):
+
         return {
             "coordinates": coordinate,
             "handle_left": handle_right,
@@ -1800,6 +1746,7 @@ class SVGLoader(SVGGeometryContainer):
         Should be read from the output of dvisvgm.
         """
         svg_name = os.path.basename(svg_filepath)
+        # TODO: Change so that the scene name can be specified or is automatically read from the system. 
         scene = blender_context.scene
         # Create new collection data block in Blender, name from SVG-file.
         collection = bpy.data.collections.new(name=svg_name)
