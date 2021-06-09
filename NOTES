@@ -1,0 +1,36 @@
+SVGLoader
+
+Perhaps we should replace it with a function? 
+Somehow, we must have return values so that we can get all points into the corresponding phobject. 
+
+The function can take one argument (the file) and return the corresponding phobject(s). 
+
+E.g. an svg-square will result in a Square(Phobject). 
+
+We must also take care so that the objects can be stored in each other. 
+
+
+Simplest case: 
+One SVG with a square. 
+
+We should have 
+
+Square(Phobject) 
+
+Instance variable: 
+	position (x,y) - position of anchor
+	length, width 
+	anchor_position 
+	rounded corners (data about these)
+	rotation data? 
+	all curves 
+
+	Alternatively, we should just get the points with all the information
+	already stored, but this will make it harder. 
+	E.g. morphing between different corner radii can cause problems. 
+
+	When parsing the SVG-file we can hence take the values and parse
+	them all the way to Blender space. 
+	These values can then be returned to Square. 
+	
+							
