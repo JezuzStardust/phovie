@@ -16,7 +16,7 @@ from importlib import resources
 import subprocess
 import re
 from phovie import templates
-import phovie.svgparser.svgparser
+import svgparser.svgparser
 
 pattern = r"(depth=([+-]?(\d+(\.\d*)?|[+-]?(\.\d+))([eE][+-]?\d+)?)pt)"
 re_pattern = re.compile(pattern)
@@ -50,8 +50,8 @@ def generate_text_collection(texcode, collection_to_move_to=None):
 
     # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + ".svg"
-    parser = phovie.svgparser.svgparser.SVGLoader(
-        bpy.context, file_path + ".svg", origin="MC"
+    parser = svgparser.svgparser.SVGLoader(
+        bpy.context, file_path + ".svg", origin="PC"
     )
     parser.parse()
     parser.create_blender_splines()
