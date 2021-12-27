@@ -1,12 +1,14 @@
+from importlib import resources, reload
+import math
+import os
+
 import bpy
 from mathutils import Vector
-import math
-from importlib import resources, reload
-import os
+
 import phovie  # Only to get path to background image
 from phovie import generate_text
 
-reload(generate_text)
+reload(generate_text) # TODO: Is this really needed here?
 
 # This should probably just be a set of functions.
 # Hmmm... or perhaps each Clip should be a separate

@@ -1,7 +1,9 @@
-import bpy
-import math
+""" Some functions for drawing and manipulating grease pencil objects. 
+Note yet needed, but could be useful later."""
 import numpy as np
 
+import bpy
+import math
 
 def get_grease_pencil(gpencil_obj_name="Grease Pencil"):
     """
@@ -20,7 +22,6 @@ def get_grease_pencil(gpencil_obj_name="Grease Pencil"):
     gpencil = bpy.context.scene.objects[gpencil_obj_name]
 
     return gpencil
-
 
 def get_grease_pencil_layer(gpencil, gpencil_layer_name="GP_Layer", clear_layer=False):
     """
@@ -46,17 +47,13 @@ def get_grease_pencil_layer(gpencil, gpencil_layer_name="GP_Layer", clear_layer=
 
     return gpencil_layer
 
-
 # Util for default behavior merging previous two methods
-def init_grease_pencil(
-    gpencil_obj_name="GPencil", gpencil_layer_name="GP_Layer", clear_layer=True
-):
+def init_grease_pencil(gpencil_obj_name="GPencil", gpencil_layer_name="GP_Layer", clear_layer=True):
     gpencil = get_grease_pencil(gpencil_obj_name)
     gpencil_layer = get_grease_pencil_layer(
         gpencil, gpencil_layer_name, clear_layer=clear_layer
     )
     return gpencil_layer
-
 
 # Default primitives: line, longitudal_circle, latitudal_circle
 # These should probably be classes right?
@@ -72,7 +69,6 @@ def draw_line(gp_frame, p0: tuple, p1: tuple):
     gp_stroke.points[0].co = p0
     gp_stroke.points[1].co = p1
     return gp_stroke
-
 
 def draw_circle(gp_frame, center, radius, num_segments):
     # Init new stroke
@@ -90,7 +86,6 @@ def draw_circle(gp_frame, center, radius, num_segments):
         gp_stroke.points[i].co = (x, y, z)
 
     return gp_stroke
-
 
 def rotate_stroke(stroke, angle, axis="z"):
     # Define rotation matrix based on axis
@@ -123,7 +118,6 @@ def rotate_stroke(stroke, angle, axis="z"):
     # Apply rotation matrix to each point
     for i, p in enumerate(stroke.points):
         p.co = transform_matrix @ np.array(p.co).reshape(3, 1)
-
 
 def draw_sphere(gp_frame, radius, num_segments=64, num_circles=12):
     angle = math.pi / num_circles

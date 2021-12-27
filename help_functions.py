@@ -1,3 +1,4 @@
+# TODO: Add copyright. 
 """help_functions defines utility functions used by other modules. 
 
 Functions:
@@ -27,7 +28,6 @@ def clear_scene():
         for data in data_list:
             data_list.remove(data)
 
-
 def reload_modules(print_to_console=False):
     """Reloads all custom modules (modules that starts with 'jens').
 
@@ -55,7 +55,7 @@ def reload_modules(print_to_console=False):
             print("Reloading " + module_name)
         importlib.reload(sys.modules[module_name])
 
-
+# Not sure if this is needed. 
 if __name__ == "__main__":
     clear_scene()
     reload_modules(True)

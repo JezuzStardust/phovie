@@ -1,3 +1,5 @@
+# TODO: Add copyright. 
+
 """This module creates a collection with curve objects that are generated from
 output of a LaTeX-command or text. 
 
@@ -9,12 +11,14 @@ Results:
     Produces a collection with the curve objects. 
 """
 
-import bpy
-import os
-import hashlib
 from importlib import resources
-import subprocess
+import hashlib
+import os
 import re
+import subprocess
+
+import bpy
+
 from phovie import templates
 import svgparser.svgparser
 
@@ -24,11 +28,10 @@ re_pattern = re.compile(pattern)
 blender_file_path = bpy.path.abspath("//")
 latex_directory = blender_file_path + "latex-file/"  # TODO: Make name a constant.
 
-
 def generate_text_collection(texcode, collection_to_move_to=None):
     """Generates a new collection with curve object from a string with LaTeX-commands or text.
     Args:
-        texcode: A string containing valid LaTeX code. Use r to make the string raw if it åcontains e.g. backslash.
+        texcode: A string containing valid LaTeX code. Use r to make the string raw if it contains, e.g., backslash.
         collection_to_move_to: A collection where all objects are moved.
     """
     if not os.path.exists(latex_directory):
@@ -40,7 +43,7 @@ def generate_text_collection(texcode, collection_to_move_to=None):
 
     gen_latex_source(texcode, latex_directory, name)
     gen_dvi(texcode, latex_directory, name)
-    gen_svg(file_path)
+    depth = str(gen_svg(file_path))
 
     # TODO: String this together better.
     # Each generation should return the path of the new file.
@@ -51,8 +54,10 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + ".svg"
     parser = svgparser.svgparser.SVGLoader(
-        bpy.context, file_path + ".svg", origin="PC"
+        bpy.context, file_path + ".svg", origin="PC", depth=depth,
     )
+    # TODO: Rethink this. Perhaps the parsers job is simply to get the data. 
+    # the actual creation of the curves could be done externally.
     parser.parse()
     parser.create_blender_splines()
 
@@ -63,13 +68,11 @@ def generate_text_collection(texcode, collection_to_move_to=None):
         object.scale = (100, 100, 100)
     return bpy.data.collections[coll_name].objects
 
-
 def make_directory(latex_directory):
     """Creates the directory to store the output files.
     These files can in general be discarded afterwards."""
-    print("Make directory")
+    print("Creating directory: " + latex_directory)
     os.system("mkdir -p " + '"' + latex_directory + '"')
-
 
 def gen_hash(expression):  # , template_tex_file_body):
     """Generates a hash based on the expression.
@@ -83,10 +86,11 @@ def gen_hash(expression):  # , template_tex_file_body):
     # Truncating at 16 bytes for cleanliness
     return hasher.hexdigest()[:8]
 
-
 def gen_latex_source(texcode, directory, name):
-    """Generates the LaTeX source file."""
-    # TODO: Probably better to make tex_template a constant.
+    """Generates the LaTeX source file. 
+    Use the input and the template to create the .tex file. 
+    The output is stored in the directory."""
+    # TODO: Make the name of the tex_template a constant.
     template = resources.read_text(templates, "tex_template.tex")
     filedata = template.replace("YOURTEXTHERE", texcode)
     file_path = directory + name + ".tex"
@@ -95,10 +99,9 @@ def gen_latex_source(texcode, directory, name):
 
     return file_path
 
-
-def gen_dvi(texcode, directory, name):
-    """DOCSTRING"""
-    print("----------Generating dvi-file.----------")
+def gen_dvi(texcode, latex_directory, name):
+    """Generates a dvi from the LaTeX source. 
+    The result is stored in latex_directory as name.dvi."""
     latex_command = " ".join(
         [
             "latex",
@@ -107,43 +110,54 @@ def gen_dvi(texcode, directory, name):
             "-output-directory",
             '"' + latex_directory + '"',
             '"' + latex_directory + name + ".tex" + '"',
+            #+ ' > /dev/null' # Send output to null if not needed.
         ]
     )
-    #' > /dev/null'])
+
     os.system(latex_command)
-    # Add check and output logfile for latex in case it failes
+    # TODO: Add check and output logfile for latex in case it fails.
     # See manimlib/utils/tex_file_writing.py line 66-72.
 
-
 def gen_svg(file_path):
-    """Generates the svg file from the dvi file."""
-    # TODO: Parse the baseline from the out argument.
-    # Remeber to set
-    # export LIBGS=/usr/local/lib/libgs.dylib
-    # in the .zshrc and source it!
-    # If this dylib is missing install ghostscript.
+    """Generates the svg file from the dvi file.
+    Returns the text depth variable (distance below text baseline where the 
+    output ends. If it does not exist, the output is zero."""
+    # Remember to set "export LIBGS=/usr/local/lib/libgs.dylib"
+    # in the .zshrc and source it! 
+    #If this dylib is missing install ghostscript using Homebrew.
     print("----------Generating svg-file----------")
     svg_command = " ".join(
         [
             "dvisvgm",
             "-n",  # No fonts!
             "--bbox=preview",
-            # '--libgs=/usr/local/lib/libgs.dylib',
+            # '--libgs=/usr/local/lib/libgs.dylib', # Not needed if $LIBGS is set.
             "--output=" + '"' + file_path + ".svg" + '"',
             '"' + file_path + ".dvi" '"',
         ]
-    )
-    proc = subprocess.Popen([svg_command], stdout=subprocess.PIPE, shell=True)
-    (out, err) = proc.communicate()
-    print("start")
-    for p in re_pattern.findall(str(out)):
-        print("hej", p)
-    print("end")
-    print(out)  # Use this to parse baseline???
+    ) 
+    process = subprocess.run([svg_command], capture_output=True, shell=True)
+    depth_re = re.compile(r'(?<=depth=)\d+.\d+pt')
+    # Note that the diagnostic output ends up in stderr, in accordance with POSIX.
+    print(process.stderr.decode("UTF-8"))
+    depth = re.search(depth_re, process.stderr.decode("UTF-8"))
+    if depth: 
+        return depth[0]
+    else:
+        return 0
 
+    # proc = subprocess.Popen([svg_command], stdout=subprocess.PIPE, shell=True)
+    # (out, err) = proc.communicate()
+    # print('hej', out) 
+    # print('mej', err) 
+    # print("start")
+    # for p in re_pattern.findall(str(out)):
+    #     print("hej", p)
+    # print("end")
+    # print(out)  # Use this to parse baseline???
 
 """
-    1. Create directory if needed (perhaps move somewhere else, e.g. when scene is created). 
+    1. Create directory if needed (perhaps move somewhere else, e.g., where scene is created). 
     2. Generate hash for name. 
     3. Create LaTeX-file frome template and string. 
     4. Run LaTe to create a dvi-file. 
