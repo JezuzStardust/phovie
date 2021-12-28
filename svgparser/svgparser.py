@@ -643,22 +643,29 @@ class SVGGeometrySVG(SVGGeometryContainer):
         if self._context["outer_SVG"] is self:
             position = self._context["origin"]
             pos_v = position[0]
+            # Top
             if pos_v == "T":
                 o_pos_v = 0
+            # Middle
             elif pos_v == "M":
                 o_pos_v = -e_height / 2
+            # Bottom
             elif pos_v == "B":
                 o_pos_v = -e_height
 
             pos_h = position[1]
+            # Left
             if pos_h == "L":
                 o_pos_h = 0
+            # Center
             elif pos_h == "C":
                 o_pos_h = -e_width / 2
+            # Right
             elif pos_h == "R":
                 o_pos_h = -e_width
 
             depth = svgutils.svg_parse_coord(self._context["depth"])
+            print('DEEEEEPTH', depth)
 
             m = m @ Matrix.Translation(Vector((o_pos_h, o_pos_v + depth, 0)))
 
