@@ -1,0 +1,17 @@
+For a LaTeX letter
+1. Duplicate the letter.
+2. For the original, set 2D, set fill both, and add the material.
+3. For the duplicate:
+	- Set 3D. 
+	- Geometry -> Offset: -0.000001 m (tweak this).
+	- Bevel -> Round -> Depth: 0.000003 m (tweak).
+	- Potentially, change the resolution of the bevel.
+	- Add the material.
+
+For both curves:
+Resolution Preview U: 64
+Render.U: 0 (uses the same as preview).
+If this causes problems, set the preview lower and the render to 64.
+
+- Set the two materials (either create them from scratch or import from a .blend-file with resources.
+- Set the keyframe depending on time.
