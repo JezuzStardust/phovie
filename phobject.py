@@ -20,13 +20,13 @@ class Text(Phobject):
     """
     def __init__(self, 
                  position = mathutils.Vector((0,0,0))
-                 anchor = "MC"
+                 anchor = "LBase"
                  text = "Text",
                  )
 
         self.text = text
         super().__init__(self)
-        generate_text(text) 
+        generate_text(text) # Should catch a return value here. 
 
 
 
