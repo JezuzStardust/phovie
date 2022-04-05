@@ -1,0 +1,12 @@
+import logging
+import test2
+
+
+logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG)
+logging.debug('This message should go to the log file2')
+logging.info('So should this')
+logging.warning('And this, too')
+logging.error('And non-ASCII stuff, too, like Øresund and Malmö')
+
+
+test2.ho()
