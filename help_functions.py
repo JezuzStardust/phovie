@@ -45,11 +45,15 @@ def reload_modules(print_to_console=False):
     if print_to_console:
         print("Reloading all custom modules.")
 
-    module_names = [
-        module for module in sys.modules.keys() if module.startswith("phovie")
-    ]
-    module_names += [module for module in sys.modules.keys() if module.startswith("svg") 
-    ]
+    modules = ["phovie", "svg"]
+    module_names = []
+    for name in modules:
+        module_names += [
+            module for module in sys.modules.keys() if module.startswith(name) 
+        ]
+    # print(f"module_names = {module_names}")
+    # module_names += [module for module in sys.modules.keys() if module.startswith("svg") ]
+
     for module_name in module_names:
         if print_to_console:
             print("Reloading " + module_name)
