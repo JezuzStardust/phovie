@@ -54,7 +54,7 @@ def generate_text_collection(texcode, collection_to_move_to=None):
     # bpy.ops.import_curve.svg(filepath=file_path + '.svg')
     coll_name = name + ".svg"
     parser = svgparser.svgparser.SVGLoader(
-        bpy.context, file_path + ".svg", origin="PC", depth=depth,
+        bpy.context, file_path + ".svg", origin="DC", depth=depth,
     )
     # TODO: Rethink this. Perhaps the parsers job is simply to get the data. 
     # the actual creation of the curves could be done externally.
